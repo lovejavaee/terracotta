@@ -1,0 +1,10 @@
+options:
+  dist-url:
+    type: string
+    default: http://d2zwv9pap9ylyd.cloudfront.net/terracotta-3.6.1.tar.gz
+    description: |
+      Distribution URL.
+  java-opts:
+    type: string
+    description: |
+      Java options to pass to Terracotta JVM.

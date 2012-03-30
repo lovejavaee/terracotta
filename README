@@ -1,0 +1,19 @@
+Overview
+--------
+
+Distributed HA caching/storage platform for Java
+ 
+Usage
+-----
+
+To deploy a Terracotta service::
+
+  juju deploy --repository . local:terracotta terracotta
+
+To use Terracotta for Tomcat's session storage::
+
+  # deploy Tomcat instance
+  juju deploy --repository . local:tomcat tomcat
+
+  # associate Tomcat with Terracotta
+  juju add-relation tomcat:terracotta terracotta:dso

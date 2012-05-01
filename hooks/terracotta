@@ -6,7 +6,7 @@ addServer()
 {
 	juju-log "Adding server $JUJU_REMOTE_UNIT to array"
 	dir=$(dotdee -d /etc/terracotta/tc-config.xml)
-	configRemoteServer $(relation-get private-address) $JUJU_REMOTE_UNIT $(config-get persistent-storage) \
+	configRemoteServer $(relation-get private-address) "$JUJU_REMOTE_UNIT" $(config-get persistent-storage) \
 		> "$dir/45-$(escapeName $JUJU_REMOTE_UNIT)"
 	dotdee -u /etc/terracotta/tc-config.xml
 }
@@ -73,7 +73,7 @@ configure()
 	echo "JAVA_OPTS=\"$(config-get java-opts)\"" > "$dir/20-javaopts"
 	dotdee -u /etc/default/terracotta
 	dir=$(dotdee -d /etc/terracotta/tc-config.xml)
-	configServer $(unit-get private-address) $JUJU_UNIT_NAME $(config-get persistent-storage) \
+	configServer $(unit-get private-address) "$JUJU_UNIT_NAME" $(config-get persistent-storage) \
 		> "$dir/45-localhost"
 	dotdee -u /etc/terracotta/tc-config.xml
 }

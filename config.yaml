@@ -1,10 +1,24 @@
 options:
+  # Terracotta configuration
+  persistent-storage:
+    type: boolean
+    default: True
+    description: |
+      Use persistent, disk backed storage, or temporary storage.
+  # Distribution
   dist-url:
     type: string
-    default: http://d2zwv9pap9ylyd.cloudfront.net/terracotta-3.6.1.tar.gz
+    default: http://d2zwv9pap9ylyd.cloudfront.net/terracotta-3.6.2.tar.gz
     description: |
       Distribution URL.
+  dist-md5:
+    type: string
+    default: 92c6456f1641b7662b4dedec15eaf3f4
+    description: |
+      MD5 distribution hash.
+  # Java options
   java-opts:
     type: string
+    default: -Xms1024M -Xmx1024M
     description: |
-      Java options to pass to Terracotta JVM.
+      Java options for Terracotta JVM.

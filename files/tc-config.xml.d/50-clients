@@ -1,0 +1,3 @@
+  <clients>
+    <logs>/var/log/terracotta</logs>
+  </clients>

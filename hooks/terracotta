@@ -1,6 +1,48 @@
 #!/bin/bash -e
 
-TEMP=/var/tmp
+readonly TEMP=/var/tmp
+
+addServer()
+{
+	juju-log "Adding server $JUJU_REMOTE_UNIT to array"
+	dir=$(dotdee -d /etc/terracotta/tc-config.xml)
+	configRemoteServer $(relation-get private-address) $JUJU_REMOTE_UNIT $(config-get persistent-storage) \
+		> "$dir/45-$(escapeName $JUJU_REMOTE_UNIT)"
+	dotdee -u /etc/terracotta/tc-config.xml
+}
+
+checkChecksum()
+{
+	if [[ $(md5sum "$1" | cut -d " " -f 1) != $2 ]]; then
+		juju-log --log-level CRITICAL "Checksum of $1 failed"
+		exit 1
+	fi
+}
+
+configDefaults()
+{
+	echo "JAVA_HOME=/usr/lib/jvm/java-6-openjdk" > "$dir/10-javahome"
+	echo "TC_SERVER=$JUJU_UNIT_NAME" > "$dir/40-tcserver"
+}
+
+configRemoteServer()
+{
+	cat <<-EOF
+		    <server host="$1" name="$2">
+		      <dso>
+		        <persistence>
+		EOF
+	if [[ $3 == True ]]; then
+		echo "          <mode>permanent-store</mode>"
+	else
+		echo "          <mode>temporary-swap-only</mode>"
+	fi
+	cat <<-"EOF"
+		        </persistence>
+		      </dso>
+		    </server>
+		EOF
+}
 
 configServer()
 {
@@ -11,63 +53,34 @@ configServer()
 		      <statistics>/var/lib/terracotta/server-statistics</statistics>
 		      <dso>
 		        <persistence>
-		          <mode>temporary-swap-only</mode>
+		EOF
+	if [[ $3 == True ]]; then
+		echo "          <mode>permanent-store</mode>"
+	else
+		echo "          <mode>temporary-swap-only</mode>"
+	fi
+	cat <<-"EOF"
 		        </persistence>
 		      </dso>
 		    </server>
-	EOF
-}
-
-configSetup()
-{
-	echo '<?xml version="1.0" encoding="UTF-8"?>' > "$1/01-prolog"
-	cat <<-"EOF" > "$1/02-tc-config"
-		<tc:tc-config xmlns:tc="http://www.terracotta.org/config"
-		  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		  xsi:schemaLocation="http://www.terracotta.org/schema/terracotta-6.xsd">
-	EOF
-	cat <<-"EOF" > "$1/20-system"
-		  <system>
-		    <configuration-model>production</configuration-model>
-		  </system>
-	EOF
-	echo "  <servers>" > "$1/40-servers"
-	cat <<-"EOF" > "$1/48-update-check"
-		    <update-check>
-		      <enabled>false</enabled>
-		    </update-check>
-	EOF
-	echo "  </servers>" > "$1/49-servers"
-	cat <<-"EOF" > "$1/50-clients"
-		  <clients>
-		    <logs>/var/log/terracotta</logs>
-		  </clients>
-	EOF
-	echo "</tc:tc-config>" > "$1/99-tc-config"
+		EOF
 }
 
 configure()
 {
 	juju-log "Configuring terracotta"
-	if [ ! -e /etc/default/terracotta ]; then
-		touch /etc/default/terracotta
-		dotdee --setup /etc/default/terracotta
-		dir=$(dotdee --dir /etc/default/terracotta)
-		echo "# Terracotta defaults" > "$dir/01-header"
-		echo "JAVA_HOME=/usr/lib/jvm/java-6-openjdk" > "$dir/10-javahome"
-		echo "TC_SERVER=$JUJU_UNIT_NAME" > "$dir/13-tcserver"
-	fi
-	if [ ! -e /etc/terracotta ]; then
-		mkdir /etc/terracotta
-		touch /etc/terracotta/tc-config.xml
-		dotdee --setup /etc/terracotta/tc-config.xml
-		dir=$(dotdee --dir /etc/terracotta/tc-config.xml)
-		configSetup "$dir"
-		configServer $(unit-get private-address) $JUJU_UNIT_NAME > "$dir/41-server-localhost"
-	fi
-	dir=$(dotdee --dir /etc/default/terracotta)
-	echo "JAVA_OPTS=\"$(config-get java-opts)\"" > "$dir/11-javaopts"
-	dotdee --update /etc/default/terracotta || true
+	dir=$(dotdee -d /etc/default/terracotta)
+	echo "JAVA_OPTS=\"$(config-get java-opts)\"" > "$dir/20-javaopts"
+	dotdee -u /etc/default/terracotta
+	dir=$(dotdee -d /etc/terracotta/tc-config.xml)
+	configServer $(unit-get private-address) $JUJU_UNIT_NAME $(config-get persistent-storage) \
+		> "$dir/45-localhost"
+	dotdee -u /etc/terracotta/tc-config.xml
+}
+
+escapeName()
+{
+	echo ${1//\//-}
 }
 
 installPackages()
@@ -75,19 +88,31 @@ installPackages()
 	apt-get -y install wget
 
 	juju-log "Downloading terracotta..."
-	wget -nv -c -P "$TEMP" "$(config-get dist-url)"
+	wget -nv -c -P "$TEMP" $(config-get dist-url)
+	checkChecksum "$TEMP"/terracotta-*.tar.gz $(config-get dist-md5)
 
 	juju-log "Installing terracotta..."
 
-	apt-get -y install default-jre-headless
+	apt-get -y install default-jre-headless dotdee ntp
+	service dotdee stop
+	cp /dev/null /etc/init/dotdee.conf
 
 	tar -C /usr/local/lib -xzf "$TEMP"/terracotta-*.tar.gz
 	(cd /usr/local/lib; ln -s terracotta-* terracotta)
-	(cd /usr/local/bin; ln -s ../lib/terracotta/bin/dev-console.sh)
-	(cd /usr/local/bin; ln -s ../lib/terracotta/bin/start-tc-server.sh)
-	(cd /usr/local/bin; ln -s ../lib/terracotta/bin/stop-tc-server.sh)
+	(cd /usr/local/bin; ln -s ../lib/terracotta/bin/*.sh .)
 	cp files/terracotta.conf /etc/init
 	(cd /etc/init.d; ln -s /lib/init/upstart-job terracotta)
+	touch /etc/default/terracotta
+	dotdee -s /etc/default/terracotta
+	dir=$(dotdee -d /etc/default/terracotta)
+	configDefaults "$dir"
+	dotdee -u /etc/default/terracotta
+	mkdir /etc/terracotta
+	touch /etc/terracotta/tc-config.xml
+	dotdee -s /etc/terracotta/tc-config.xml
+	dir=$(dotdee -d /etc/terracotta/tc-config.xml)
+	cp files/tc-config.xml.d/* "$dir"
+	dotdee -u /etc/terracotta/tc-config.xml
 	getent passwd terracotta > /dev/null || \
 		adduser --system --group --home /usr/local/lib/terracotta \
 		--gecos Terracotta terracotta > /dev/null
@@ -98,13 +123,19 @@ installPackages()
 	chown terracotta:terracotta /var/lib/terracotta/server-data \
 		/var/lib/terracotta/server-statistics \
 		/var/log/terracotta
+}
 
-	apt-get -y install dotdee
+removeServer()
+{
+	juju-log "Removing server $JUJU_REMOTE_UNIT from array"
+        dir=$(dotdee -d /etc/terracotta/tc-config.xml)
+	rm -f "$dir/45-$(escapeName $JUJU_REMOTE_UNIT)"
+        dotdee -u /etc/terracotta/tc-config.xml
 }
 
 restart()
 {
-	if [ $(service terracotta status | cut -d " " -f 2) == "start/running," ]; then
+	if [[ $(service terracotta status | cut -d " " -f 2) == start/running, ]]; then
 		juju-log "Restarting terracotta"
 		service terracotta restart
 	fi
@@ -122,14 +153,22 @@ stop()
 	service terracotta stop
 }
 
-case $(basename "$0") in
+cmd=$(basename "$0")
+case "$cmd" in
 config-changed)
 	configure
 	restart
 	;;
 install)
 	installPackages
-	configure
+	;;
+server-array-relation-departed)
+	removeServer
+	restart
+	;;
+server-array-relation-joined)
+	addServer
+	restart
 	;;
 start)
 	start

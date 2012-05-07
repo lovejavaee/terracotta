@@ -21,7 +21,7 @@ checkChecksum()
 
 configDefaults()
 {
-	echo "JAVA_HOME=/usr/lib/jvm/java-6-openjdk" > "$dir/10-javahome"
+	echo "JAVA_HOME=/usr/lib/jvm/default-java" > "$dir/10-javahome"
 	echo "TC_SERVER=$JUJU_UNIT_NAME" > "$dir/40-tcserver"
 }
 

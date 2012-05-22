@@ -1,5 +1,6 @@
 name: terracotta
 summary: Distributed HA caching/storage platform for Java
+maintainer: Robert Ayres <robert.ayres@ubuntu.com>
 description: |
   Distributed HA caching/storage platform for Java.
   .

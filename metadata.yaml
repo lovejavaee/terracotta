@@ -7,9 +7,12 @@ description: |
   Terracotta provides out of the box clustering for a number of well known Java   
   frameworks, including EHCache, Hibernate and Quartz as well as clustering       
   for J2EE containers.
+categories:
+  - applications
 provides:
   dso:
     interface: terracotta
     optional: true
 peers:
-  server-array: terracotta-server
+  server-array:
+    interface: terracotta-server

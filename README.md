@@ -1,5 +1,4 @@
-Overview
---------
+# Overview
 
 Distributed HA caching/storage platform for Java.
 
@@ -8,26 +7,25 @@ frameworks, including EHCache, Hibernate and Quartz as well as clustering
 for J2EE containers.
 
 The Open Source version of Terracotta allows for one active server and multiple
-hot standby servers.  Mirror groups, authentication and other features require
+hot standby servers. Mirror groups, authentication and other features require
 a paid license and are not currently supported by this charm.
  
-Usage
------
+# Usage
 
 To deploy a Terracotta service:
 
-  juju deploy --repository . local:terracotta terracotta
+    juju deploy --repository . local:terracotta terracotta
 
 Add one or more hot standby units:
 
-  juju add-unit terracotta
+    juju add-unit terracotta
 
 Units within a service will automatically configure themselves to have one
 active server and one or more hot standby servers.
 
 The Terracotta Developer Console can be used to view performance metrics
-amongst other monitoring tools.  Download and extract the Terracotta Open Source
-tarball (http://www.terracotta.org/downloads/open-source) and run
-'bin/dev-console.sh'.  Specify one of your units as the host and port 9520.
+amongst other monitoring tools. Download and extract the [Terracotta Open Source
+tarball](http://www.terracotta.org/downloads/open-source) and run
+'bin/dev-console.sh'. Specify one of your units as the host and port 9520.
 For cloud based deployments, you can use a port forwarded ssh tunnel if you add
 the internal IP of the unit as an alias for localhost in your '/etc/hosts' file.

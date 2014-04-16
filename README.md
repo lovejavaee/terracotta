@@ -16,6 +16,10 @@ To deploy a Terracotta service:
 
     juju deploy terracotta
 
+Then, expose the service, so you can access it from outside:
+
+    juju expose terracotta
+
 Add one or more hot standby units:
 
     juju add-unit terracotta
@@ -29,3 +33,10 @@ tarball](http://www.terracotta.org/downloads/open-source) and run
 'bin/dev-console.sh'. Specify one of your units as the host and port 9520.
 For cloud based deployments, you can use a port forwarded ssh tunnel if you add
 the internal IP of the unit as an alias for localhost in your '/etc/hosts' file.
+
+# Contact Information
+
+## Terracotta
+
+ - [Terracotta website](http://terracotta.org/)
+ - [Terracotta bug tracker](https://jira.terracotta.org)

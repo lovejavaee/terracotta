@@ -14,7 +14,7 @@ a paid license and are not currently supported by this charm.
 
 To deploy a Terracotta service:
 
-    juju deploy --repository . local:terracotta terracotta
+    juju deploy terracotta
 
 Add one or more hot standby units:
 
